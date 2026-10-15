@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bitcoin Portfolio Preview</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f4f6ff;font-family:Arial,sans-serif;padding:20px}
+header,.card{background:#151d33;border:1px solid #293451;border-radius:16px;padding:20px;margin-bottom:16px}
+h1{font-size:25px;margin:0 0 8px}
+p{color:#aab5d0;line-height:1.5}
+.price{font-size:32px;font-weight:bold;color:#f5b942}
+.tag{color:#8fe3b0;font-size:12px;font-weight:bold}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.label{color:#aab5d0;font-size:13px}
+.value{font-size:23px;font-weight:bold;margin:8px 0}
+button{background:#f5b942;border:0;border-radius:9px;padding:11px 15px;font-weight:bold}
+footer{font-size:12px;color:#aab5d0;padding:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="tag">● LIVE MARKET DATA · DEMO PORTFOLIO</div>
+  <h1>Bitcoin Portfolio</h1>
+  <p>A clean dashboard for viewing Bitcoin market prices and sample portfolio calculations.</p>
+  <div class="label">Current Bitcoin price (EUR)</div>
+  <div class="price" id="price">Loading...</div>
+  <p id="updated">Connecting to market data...</p>
+  <button onclick="loadPrice()">Refresh price</button>
+</header>
+
+<h2>Sample investor profiles</h2>
+<p>All holdings and balances below are fictional examples, not real investor accounts.</p>
+<div class="grid" id="profiles"></div>
+
+<footer>
+  Demo only. No real assets are held or managed here. Sample figures are fictional.
+  Market prices are provided by CoinGecko and may be delayed or unavailable.
+</footer>
+
+<script>
+const samples = [
+  {name:"Sample Investor A",btc:0.10,cash:2000,entry:60000},
+  {name:"Sample Investor B",btc:0.25,cash:5000,entry:65000},
+  {name:"Sample Investor C",btc:0.05,cash:1000,entry:70000}
+];
+
+function euro(n){
+  return new Intl.NumberFormat("en-IE",{
+    style:"currency",currency:"EUR"
+  }).format(n);
+}
+
+function showProfiles(price){
+  document.getElementById("profiles").innerHTML = samples.map(s=>{
+    const value = s.btc * price;
+    const total = value + s.cash;
+    const pnl = s.btc * (price - s.entry);
+    return `<div class="card">
+      <div class="tag">FICTIONAL SAMPLE</div>
+      <h3>${s.name}</h3>
+      <div class="label">Example BTC holding</div>
+      <div class="value">${s.btc.toFixed(3)} BTC</div>
+      <div class="label">Illustrative total value</div>
+      <div class="value">${euro(total)}</div>
+      <div class="label">Illustrative gain/loss on BTC</div>
+      <div class="value">${euro(pnl)}</div>
+      <p>Includes a fictional cash amount of ${euro(s.cash)}.</p>
+    </div>`;
+  }).join("");
+}
+
+async function loadPrice(){
+  const priceEl = document.getElementById("price");
+  const updatedEl = document.getElementById("updated");
+  priceEl.textContent = "Loading...";
+  try{
+    const response = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur"
+    );
+    if(!response.ok) throw new Error("Market data unavailable");
+    const data = await response.json();
+    const price = data.bitcoin.eur;
+    priceEl.textContent = euro(price);
+    updatedEl.textContent = "Last updated: " + new Date().toLocaleTimeString();
+    showProfiles(price);
+  }catch(error){
+    priceEl.textContent = "Price unavailable";
+    updatedEl.textContent = "Please try refreshing later.";
+    document.getElementById("profiles").innerHTML =
+      '<div class="card">Live price could not be loaded. Please try again later.</div>';
+  }
+}
+loadPrice();
+setInterval(loadPrice,60000);
+</script>
+</body>
+</html>
